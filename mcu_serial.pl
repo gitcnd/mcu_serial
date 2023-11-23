@@ -8,11 +8,13 @@ use Getopt::Long;
 # Command-line options
 my $reset = 0;
 my $dfu = 0;
+my $exit = 0;
+my $port_name;
 
-GetOptions( "reset" => \$reset, "dfu"   => \$dfu) or die "Error in command line arguments\n";
+GetOptions( "reset" => \$reset, "dfu"   => \$dfu, "exit"   => \$exit, "port=s" => \$port_name ) or die "Error in command line arguments\n";
 
 # Serial port configuration
-my $port_name = '/dev/ttyS17';
+$port_name = '/dev/ttyS21' unless($port_name);
 my $baud_rate = 115200;
 
 # Create and open the serial port
@@ -40,6 +42,7 @@ select($old_fh);
 
 &firmware() if($dfu);
 &reset() if($reset);
+&exit(0) if($exit);
 
 # Main loop
 while (1) {
