@@ -42,7 +42,7 @@ select($old_fh);
 
 &firmware() if($dfu);
 &reset() if($reset);
-&exit(0) if($exit);
+exit(0) if($exit);
 
 # Main loop
 while (1) {
