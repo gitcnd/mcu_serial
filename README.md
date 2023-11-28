@@ -5,9 +5,9 @@ This is tested and works using an ESP32CAM with the serial programming shield at
 
 ## Usage:
 
-    perl perlserial.pl -reset -port /dev/ttyS25
-    perl perlserial.pl -dfu -exit
-    perl perlserial.pl
+    perl mcu_serial.pl -reset -port /dev/ttyS25
+    perl mcu_serial.pl -dfu -exit
+    perl mcu_serial.pl
 
 -reset : reset the chip then attaches serial
 
