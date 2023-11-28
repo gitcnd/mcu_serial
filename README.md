@@ -5,10 +5,14 @@ This is tested and works using an ESP32CAM with the serial programming shield at
 
 ## Usage:
 
-    perl perlserial.pl -reset 
-    perl perlserial.pl -dfu
+    perl perlserial.pl -reset -port /dev/ttyS25
+    perl perlserial.pl -dfu -exit
     perl perlserial.pl
 
--reset : reset teh chip then attaches serial
+-reset : reset the chip then attaches serial
 
 -dfu : resets the chip (while holding down GPIO0) into DFU mode, then attaches serial
+
+-exit : skip attaching to the serial port after doing the -reset or -dfu 
+
+-port : serial ort to use
