@@ -15,4 +15,4 @@ This is tested and works using an ESP32CAM with the serial programming shield at
 
 -exit : skip attaching to the serial port after doing the -reset or -dfu 
 
--port : serial ort to use
+-port : serial port to use
