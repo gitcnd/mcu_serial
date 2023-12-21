@@ -91,7 +91,7 @@ while ($run) {
     vec($rin, $port->FILENO, 1) = 1;
 
     # Wait for data on serial port or STDIN
-    select($rin, undef, undef, 1.1);
+    select($rin, undef, undef, 0.1);
 
     # Check for data from the serial port
     if (vec($rin, $port->FILENO, 1)) {
