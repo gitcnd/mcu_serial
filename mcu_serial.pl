@@ -15,7 +15,7 @@ mcu_serial.pl
  -reset		# reset the chip then attaches serial (requires suitable serial chip and wiring of RTS and DTR lines)
  -dfu		# resets the chip (while holding down GPIO0) into DFU mode, then attaches serial
  -exit		# skip attaching to the serial port after doing the -reset or -dfu
- -cr		# send extra CR when we get LF keypress (probably never needed)
+ -lf		# send LF keypresses, instead of converting them to CR (probably never needed)
 
 =head1 DESCRIPTION
 
@@ -44,9 +44,9 @@ my $dfu = 0;
 my $exit = 0;
 my $port_name;
 my $run=1;
-my $CR=0;
+my $LF=0;
 
-GetOptions( "reset" => \$reset, "dfu"   => \$dfu, "exit"   => \$exit, "cr"   => \$CR, "port=s" => \$port_name ) or die "Error in command line arguments\n";
+GetOptions( "reset" => \$reset, "dfu"   => \$dfu, "exit"   => \$exit, "lf"   => \$LF, "port=s" => \$port_name ) or die "Error in command line arguments\n";
 
 # Serial port configuration
 $port_name = '/dev/ttyS25' unless($port_name);
@@ -85,7 +85,7 @@ ReadMode('raw'); # Set terminal to raw mode to read characters immediately
 print "Use Control-] ( ^] ) to quit terminal emulator\n";
 # Main loop
 while ($run) {
-    # Create a read set for select
+  # Create a read set for select
     my $rin = '';
     vec($rin, fileno(STDIN), 1) = 1;
     vec($rin, $port->FILENO, 1) = 1;
@@ -107,14 +107,17 @@ while ($run) {
     #  if (vec($rin, fileno(STDIN), 1)) 	# doesn't work on when pasting stuff fast - needed O_NONBLOCK to fix...
     my $key;
     do {
-	undef($key);
+        undef($key);
         my $key = getc(STDIN);
-	if( defined $key && ord($key) == 29 ){ # Exit on Ctrl+] 
-	  $run=0; last;
-	}
+        if( defined $key && ord($key) == 29 ){ # Exit on Ctrl+] 
+          $run=0; last;
+        }
         if (defined $key) {
-            $port->write($key);
-            $port->write(chr(13)) if(ord($key)==10 && $CR);	# Send CR if we got an LF (if the -CR switch was used).
+            if(ord($key)==10 && !$LF) {	# Send CR if we got an LF (unless the -lf switch was used).
+                $port->write(chr(13));
+            } else {
+                $port->write($key);
+            }
         }
     } until(!defined $key);
 
