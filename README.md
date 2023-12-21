@@ -9,12 +9,12 @@ This is tested and works using an ESP32CAM with the serial programming shield at
     perl mcu_serial.pl -dfu -exit
     perl mcu_serial.pl
 
--reset : reset the chip then attaches serial
+-port	: serial port to use.  e.g. /dev/ttyS14
 
--dfu : resets the chip (while holding down GPIO0) into DFU mode, then attaches serial
+-reset	: reset the chip then attaches serial (requires suitable serial chip and wiring of RTS and DTR lines)
 
--exit : skip attaching to the serial port after doing the -reset or -dfu 
+-dfu	: resets the chip (while holding down GPIO0) into DFU mode, then attaches serial
 
--cr : send extra CR when we get LF keypress (probably never needed)
+-exit	: skip attaching to the serial port after doing the -reset or -dfu
 
--port : serial port to use
+-lf	: send LF keypresses, instead of converting them to CR (probably never needed)
