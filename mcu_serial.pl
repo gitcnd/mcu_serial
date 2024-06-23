@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-our $VERSION = '0.20231221';	# format: major_revision.YYYYMMDD[hh24mi]
+our $VERSION = '0.20240623';	# format: major_revision.YYYYMMDD[hh24mi]
 
 =head1 NAME
 
@@ -9,13 +9,20 @@ mcu_serial.pl
 =head1 SYNOPSIS
 
  export PORT=/dev/ttyS14
- perl mcu_serial.pl -port $PORT 
+
+ use this for esp32 programmers and esp32_cam and other chips that use RTS=>Reset and DTR=>GPIO0
+	 perl mcu_serial.pl -port $PORT 
+
+ use this for boards which actually use flow control:
+	 perl mcu_serial.pl -port $PORT -setdtr -setrts -norts -nodtr
+
  
  -port		# serial port to use.  e.g. /dev/ttyS14
  -reset		# reset the chip then attaches serial (requires suitable serial chip and wiring of RTS and DTR lines)
  -dfu		# resets the chip (while holding down GPIO0) into DFU mode, then attaches serial
  -exit		# skip attaching to the serial port after doing the -reset or -dfu
  -lf		# send LF keypresses, instead of converting them to CR (probably never needed)
+ -baud		# defaults to 115200
 
 =head1 DESCRIPTION
 
@@ -45,12 +52,27 @@ my $exit = 0;
 my $port_name;
 my $run=1;
 my $LF=0;
+my $baud_rate = 115200;
+my $nodtr=0;
+my $norts=0;
 
-GetOptions( "reset" => \$reset, "dfu"   => \$dfu, "exit"   => \$exit, "lf"   => \$LF, "port=s" => \$port_name ) or die "Error in command line arguments\n";
+my $setdtr=0;
+my $setrts=0;
+
+GetOptions( "reset" => \$reset,		# cycle a pulse on the RTS line
+	    "dfu"   => \$dfu,		# hold down DTR (GPIO0) while cycling a pulse on the RTS line
+	    "exit"   => \$exit,		# quite after setting above things up (don't run the terminal)
+	    "lf"   => \$LF,		# send LF keypresses, instead of converting them to CR (probably never needed)
+	    "port=s" => \$port_name,	# eg: /dev/ttyS14 or COM14
+	    "baud=i" => \$baud_rate,	# defaults to 115200
+	    "setdtr" => \$setdtr,	# do $port->dtr_active(1)
+	    "setrts" => \$setrts,	# do $port->rts_active(1)
+	    "norts" => \$norts,		# don't use the RTS pin (except for -setrts)
+	    "nodtr" => \$nodtr,		# don't use the DTR  pin (except for -setdtr)
+	 ) or die "Error in command line arguments\n";
 
 # Serial port configuration
 $port_name = '/dev/ttyS25' unless($port_name);
-my $baud_rate = 115200;
 
 # Create and open the serial port
 my $port = Device::SerialPort->new($port_name) or die "Can't open $port_name: $!";
@@ -62,8 +84,11 @@ $port->databits(8);
 $port->stopbits(1);
 
 # Set DTR (Data Terminal Ready) line high
-$port->dtr_active(0);	# This is GPIO0 (setting this "high" pulls ESP32 GPIO0 low)
-$port->rts_active(0);	# this is reset (setting this "high" resets the ESP32)
+$port->dtr_active(1) if($setdtr);	# This is GPIO0 (setting this "high" pulls ESP32 GPIO0 low) - skip this on Lolin S2 Mini otherwise it hangs.
+$port->rts_active(1) if($setrts);	# this is reset (setting this "high" resets the ESP32)
+
+$port->dtr_active(0) unless($nodtr || $setdtr);	# This is GPIO0 (setting this "high" pulls ESP32 GPIO0 low) - skip this on Lolin S2 Mini otherwise it hangs.
+$port->rts_active(0) unless($norts || $setrts);	# this is reset (setting this "high" resets the ESP32)
 # Note that performing a reset while holding GPIO0 low enters firmware programming mode)
 
 # Set autoflush for STDOUT and STDIN
@@ -130,18 +155,21 @@ END {
 
 sub reset {
   print "\nresetting...\n";
-  $port->rts_active(0); $port->dtr_active(0);
+  $port->rts_active(0) unless($norts);
+  $port->dtr_active(0) unless($nodtr);
   select(undef, undef, undef, 0.2);
-  $port->rts_active(1);
+  $port->rts_active(1) unless($norts);
   select(undef, undef, undef, 0.2);
-  $port->rts_active(0);
+  $port->rts_active(0) unless($norts);
 }
 sub firmware {
   print "\nresetting into DFU...\n";
-  $port->rts_active(0); $port->dtr_active(1);
+  $port->rts_active(0) unless($norts);
+  $port->dtr_active(1) unless($nodtr);
   select(undef, undef, undef, 0.2);
-  $port->rts_active(1);
+  $port->rts_active(1) unless($norts);
   select(undef, undef, undef, 0.2);
-  $port->rts_active(0); $port->dtr_active(0);
+  $port->rts_active(0) unless($norts);
+  $port->dtr_active(0) unless($nodtr);
 }
 
