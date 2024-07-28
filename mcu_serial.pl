@@ -59,6 +59,9 @@ my $norts=0;
 my $setdtr=0;
 my $setrts=0;
 
+my $clrdtr=0;
+my $clrrts=0;
+
 GetOptions( "reset" => \$reset,		# cycle a pulse on the RTS line
 	    "dfu"   => \$dfu,		# hold down DTR (GPIO0) while cycling a pulse on the RTS line
 	    "exit"   => \$exit,		# quite after setting above things up (don't run the terminal)
@@ -67,6 +70,8 @@ GetOptions( "reset" => \$reset,		# cycle a pulse on the RTS line
 	    "baud=i" => \$baud_rate,	# defaults to 115200
 	    "setdtr" => \$setdtr,	# do $port->dtr_active(1)
 	    "setrts" => \$setrts,	# do $port->rts_active(1)
+	    "clrdtr" => \$clrdtr,	# do $port->dtr_active(1)
+	    "clrrts" => \$clrrts,	# do $port->rts_active(1)
 	    "norts" => \$norts,		# don't use the RTS pin (except for -setrts)
 	    "nodtr" => \$nodtr,		# don't use the DTR  pin (except for -setdtr)
 	 ) or die "Error in command line arguments\n";
@@ -86,6 +91,9 @@ $port->stopbits(1);
 # Set DTR (Data Terminal Ready) line high
 $port->dtr_active(1) if($setdtr);	# This is GPIO0 (setting this "high" pulls ESP32 GPIO0 low) - skip this on Lolin S2 Mini otherwise it hangs.
 $port->rts_active(1) if($setrts);	# this is reset (setting this "high" resets the ESP32)
+
+$port->dtr_active(0) if($clrdtr);	# esp32c2 uses both flow control, and reset, on these lines
+$port->rts_active(0) if($clrrts);	# 
 
 $port->dtr_active(0) unless($nodtr || $setdtr);	# This is GPIO0 (setting this "high" pulls ESP32 GPIO0 low) - skip this on Lolin S2 Mini otherwise it hangs.
 $port->rts_active(0) unless($norts || $setrts);	# this is reset (setting this "high" resets the ESP32)
@@ -107,6 +115,8 @@ select($old_fh);
 exit(0) if($exit);
 
 ReadMode('raw'); # Set terminal to raw mode to read characters immediately
+print "dtr=" . $port->dtr_active() . "\n";
+print "rts=" . $port->rts_active() . "\n";
 print "Use Control-] ( ^] ) to quit terminal emulator\n";
 # Main loop
 while ($run) {
